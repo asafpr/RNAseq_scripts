@@ -1,6 +1,6 @@
 # Default path of executables needed to run process_nextseq_run.py
-BWA = "/usr/bin/bwa"
-FASTQC = "/cs/icore/asafp5/software/FastQC/fastqc"
+BWA = "/usr/bin/bwa" # Version 0.7.10-r789
+FASTQC = "/cs/icore/asafp5/software/FastQC/fastqc" 
 FASTQC_FILES = ("html", "zip")
 BCL2FASTQ = "/usr/local/bcl2fastq/2.15.0.4/bin/bcl2fastq"
 SAMTOOLS = "samtools"

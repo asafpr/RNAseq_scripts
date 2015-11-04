@@ -155,7 +155,7 @@ def process_command_line(argv):
     parser.add_argument(
         'genome_fasta',
         help='Name of genome fasta file. The file must be indexed using'
-        'bwa index command prior to this run.')
+        ' bwa index command prior to this run.')
     parser.add_argument(
         'genes_gff',
         help='Name of gff file to count the reads per gene.')
@@ -178,7 +178,7 @@ def process_command_line(argv):
     parser.add_argument(
         '-a', '--adapter_seq', default=defs.ADAPTER_1,
         help="Sequence of adapter to remove from 3' end of read."
-        "If multiple sequences are given (comma separated) use all of them.")
+        " If multiple sequences are given (comma separated) use all of them.")
     parser.add_argument(
         '-A', '--adapter_pair_seq', default=defs.ADAPTER_2,
         help='Adapter sequence of the paired read.')
@@ -214,7 +214,7 @@ def process_command_line(argv):
     parser.add_argument(
         '--skip_mapping', action='store_true', default=False,
         help='Skip the mapping part, useful with --remap to recount and'
-        'generate wig files.')
+        ' generate wig files.')
     parser.add_argument(
         '--force_single', action='store_true', default=False,
         help='When mapping use only the first mate, ignore the second mate.')
@@ -232,7 +232,7 @@ def process_command_line(argv):
     parser.add_argument(
         '--gene_overlap', type=int, default=defs.OVERLAP,
         help='Number of nucleotides that should overlap between the gene and'
-        'the read to add one to the number of reads per gene.')
+        ' the read to add one to the number of reads per gene.')
     parser.add_argument(
         '--bwa_exec', default=defs.BWA,
         help='bwa command, default: %s.'%defs.BWA)
@@ -585,6 +585,12 @@ def main(argv=None):
 
     # After cutadapt the list should be different with cutadapt in the middle
     input_files_1 = glob.glob("%s/%s/*_1.fastq.gz"%(basedir, defs.FASTQ_DIR))
+    # Run fastqc on all the fastq files after cutadapt
+    input_files_2 = glob.glob("%s/%s/*_2.fastq.gz"%(basedir, defs.FASTQ_DIR))
+    run_fastqc(
+        input_files_1+input_files_2, "%s/%s"%(basedir, defs.QCRESULTS_DIR),
+        wwwdir, settings.fastqc_exec)
+
     # Run bwa on all files
     if settings.force_single:
         is_paired = False

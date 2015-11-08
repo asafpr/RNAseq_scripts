@@ -120,24 +120,10 @@ def process_command_line(argv):
         argv = sys.argv[1:]
 
     # initialize the parser object, replace the description
-    parser = argparse.ArgumentParser(description='Process a nextseq run')
+    parser = argparse.ArgumentParser(
+        description='Process a nextseq run',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
-    # define options here:
-    # For example, this:
-    # parser.add_argument('integers', metavar='N', type=int, nargs='+',
-    #                    help='an integer for the accumulator')
-    # parser.add_argument('--sum', dest='accumulate', action='store_const',
-    #               const=sum, default=max,
-    #               help='sum the integers (default: find the max)')
-    # Will generate this help:
-    #usage: prog.py [-h] [--sum] N [N ...]
-    #Process some integers.
-    #positional arguments:
-    # N           an integer for the accumulator
-    #
-    #optional arguments:
-    # -h, --help  show this help message and exit
-    # --sum       sum the integers (default: find the max)
     parser.add_argument(
         'benchman',
         help='Experimentalist name, will be the first subdirectory name.')
@@ -193,6 +179,9 @@ def process_command_line(argv):
         '--choose', type=int, default=None,
         help='If there are multiple libraries choose this one instead of prompting.')
     parser.add_argument(
+        '--dont_delete', default=False, action='store_true',
+        help="Don't delete intermediate fastq files.")
+    parser.add_argument(
         '--force_dir', default=None,
         help='Extract run data from this directory.')
     parser.add_argument(
@@ -237,8 +226,26 @@ def process_command_line(argv):
         '--bwa_exec', default=defs.BWA,
         help='bwa command, default: %s.'%defs.BWA)
     parser.add_argument(
+        '--bwa_aln_params', default=defs.PARAMS_ALN,
+        help='Parameters of bwa aln.')
+    parser.add_argument(
+        '--bwa_samse_params', default=defs.PARAMS_SAMSE,
+        help='Parameters for bwa samse (used for single-end only).')
+    parser.add_argument(
+        '--bwa_sampe_params', default=defs.PARAMS_SAMPE,
+        help='Parameters for bwa sampe (used for paired-end only).')
+    parser.add_argument(
         '--fastqc_exec', default=defs.FASTQC,
         help='fastqc executable, default: %s.'%defs.FASTQC)
+    parser.add_argument(
+        '--samtools_cmd', default=defs.SAMTOOLS,
+        help='samtools executable.')
+    parser.add_argument(
+        '--cutadapt_cmd', default=defs.CUTADAPT_CMD,
+        help='cutadapt executable.')
+    parser.add_argument(
+        '--cutadapt_params', default=defs.CUTADAPT_ADD,
+        help='Additional parameters for cutadapt.')
     settings = parser.parse_args(argv)
 
     return settings
@@ -403,7 +410,7 @@ def run_bcl2fatq(
             
         
 def run_cutadapt(fname1, is_paired, adapter_seq, adapter_pair_seq, minlen,
-                 qualval, cutadapt_cmd):
+                 qualval, cutadapt_cmd, cutadapt_add, dont_delete):
     """
     Run cutadapt on the input file, trimming low quality 3' ends and adapters
     Arguments:
@@ -415,6 +422,7 @@ def run_cutadapt(fname1, is_paired, adapter_seq, adapter_pair_seq, minlen,
     - `minlen`: Minimal length of read to report
     - `qualval`: Quality minimal value
     - `cutadapt_cmd`: executable of cutadapt
+    - `cutadapt_add`: Additional parameters for cutadapt
     """
 #    os.environ["PYTHONPATH"] += ":/usr/local/icore-hm/x86_64.debian64_5775/python2.7/lib/python2.7/site-packages"
     cutadapt_cmd = [cutadapt_cmd, '-m', str(minlen),
@@ -428,6 +436,7 @@ def run_cutadapt(fname1, is_paired, adapter_seq, adapter_pair_seq, minlen,
         if adapter_seq:
             for ads in adapter_seq.split(','):
                 add_params.extend(['-a', ads])
+        add_params.extend(cutadapt_add.split())
         logging.info("First cutadapt pass over the pair %s"%fname1)
         logging.info("Running %s"%' '.join(
             cutadapt_cmd + add_params + [fname1, fname2]))
@@ -455,8 +464,9 @@ def run_cutadapt(fname1, is_paired, adapter_seq, adapter_pair_seq, minlen,
         # Remove the input files and close the temp files
         tmp_outf1.close()
         tmp_outf2.close()
-        os.unlink(fname1)
-        os.unlink(fname2)
+        if not dent_delete:
+            os.unlink(fname1)
+            os.unlink(fname2)
     else:
         # One pass
         outf1_name = fname1.rsplit("_", 1)[0] + "_cutadapt_1.fastq.gz"
@@ -473,7 +483,8 @@ def run_cutadapt(fname1, is_paired, adapter_seq, adapter_pair_seq, minlen,
         for line in spl:
             logging.info(line.strip())
         spl.close()
-        os.unlink(fname1)
+        if not dont_delete:
+            os.unlink(fname1)
     logging.info("Finished cutadapt on file %s" %fname1)
 
 
@@ -566,9 +577,10 @@ def main(argv=None):
                     "%s/%s/%s_2.fastq"%(
                     basedir, defs.FASTQ_DIR, defs.SINGLE_NAME))
         # Remove the Undetermined files
-        for fname in undet_R1 + undet_R2:
-            os.unlink(fname)
-            logging.info("Removing raw file %s"%fname)
+        if not settings.dont_delete:
+            for fname in undet_R1 + undet_R2:
+                os.unlink(fname)
+                logging.info("Removing raw file %s"%fname)
     else:
         is_paired = len(
             glob.glob("%s/%s/*_2.fastq.gz"%(basedir, defs.FASTQ_DIR))) > 0
@@ -581,7 +593,8 @@ def main(argv=None):
             run_cutadapt(
                 fname1, is_paired, settings.adapter_seq,
                 settings.adapter_pair_seq, settings.minimal_length,
-                settings.quality_cutoff, defs.CUTADAPT_CMD)
+                settings.quality_cutoff, settings.cutadapt_cmd,
+                settings.cutadapt_params, settings.dont_delete)
 
     # After cutadapt the list should be different with cutadapt in the middle
     input_files_1 = glob.glob("%s/%s/*_1.fastq.gz"%(basedir, defs.FASTQ_DIR))
@@ -605,8 +618,8 @@ def main(argv=None):
                 "%s/%s"%(basedir, defs.BWA_DIR),
                 fname1.rsplit('/', 1)[1].rsplit("_", 1)[0] + "_bwa",
                 settings.allowed_mismatches, settings.genome_fasta,
-                defs.PARAMS_ALN, defs.PARAMS_SAMPE, defs.PARAMS_SAMSE,
-                defs.SAMTOOLS)
+                settings.bwa_aln_params, settings.bwa_sampe_params,
+                settings.bwa_samse_params, settings.samtools_cmd)
         
     # count and prepare wig files
     features, feat_list = count_PE_fragments.read_gtf(

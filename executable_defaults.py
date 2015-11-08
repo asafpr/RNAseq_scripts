@@ -1,9 +1,9 @@
 # Default path of executables needed to run process_nextseq_run.py
 BWA = "/usr/bin/bwa" # Version 0.7.10-r789
-FASTQC = "/cs/icore/asafp5/software/FastQC/fastqc" 
+FASTQC = "/cs/icore/asafp5/software/FastQC/fastqc" # Version 0.11.2 
 FASTQC_FILES = ("html", "zip")
 BCL2FASTQ = "/usr/local/bcl2fastq/2.15.0.4/bin/bcl2fastq"
-SAMTOOLS = "samtools"
+SAMTOOLS = "samtools" # Version 1.1
 BCLPARAMS = "-p 8 -d 6 -r 4 -w 4"
 DATA = "/mnt/lustre/hms-01/fs01/asafp5/lab_nextseq_complete_data/data"#"/cs/icore/asafp5/lab_nextseq_complete_data/data"
 LOGS = "/mnt/lustre/hms-01/fs01/asafp5/lab_nextseq_complete_data/logs"#"/cs/icore/asafp5/lab_nextseq_complete_data/logs"
@@ -15,6 +15,7 @@ BWA_DIR = "bwa_mapping"
 SINGLE_NAME = "all_run_reads"
 #CUADAPT_PATH = "/usr/local/icore-hm/x86_64.debian64_5775/python2.7/lib/python2.7/site-packages/"
 CUTADAPT_CMD = "/cs/icore/asafp5/lib/python/cutadapt"
+CUTADAPT_ADD = ""
 MINLEN = 21
 QUAL_CUTOFF = 15
 MISMATCHES = 2

@@ -583,7 +583,7 @@ def main(argv=None):
                 logging.info("Removing raw file %s"%fname)
     else:
         is_paired = len(
-            glob.glob("%s/%s/*_2.fastq.gz"%(basedir, defs.FASTQ_DIR))) > 0
+            glob.glob("%s/%s/*_2.fastq"%(basedir, defs.FASTQ_DIR))) > 0
         
     if not settings.skip_cutadapt:
         # Get the list of files in the fastq directory
